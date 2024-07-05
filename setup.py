@@ -9,7 +9,7 @@ setup(
     version="0.0.1",
     description="Online payment fraud detection",
     author="Weena",
-    author_email="jatmaurice@gmail.com",
+    author_email="sylvainka12@gmail.com",
     url="https://github.com/sylvain12/fraud-detection-ml",
     install_requires=requirements,
     packages=find_packages(),

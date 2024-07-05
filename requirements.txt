@@ -41,7 +41,7 @@ fastjsonschema==2.19.1
 filelock==3.15.1
 fonttools==4.53.0
 fqdn==1.5.1
--e git+ssh://git@github.com/Weena24/online-payment-fraud-detection.git@2d3d8b3e071b5e9a2f1c08ad8b5ebf349f770e48#egg=fraud_detection
+-e git+https://github.com/sylvain12/fraud-detection-ml.git@c04d27d3f7d5a70662c515e15390e1e6689d308d#egg=fraud_detection
 frozenlist==1.4.1
 fsspec==2024.6.0
 gdown==5.2.0
