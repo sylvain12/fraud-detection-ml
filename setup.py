@@ -6,7 +6,7 @@ requirements = [x.strip() for x in content if "git+" not in x]
 
 setup(
     name="fraud_detection",
-    version="0.0.1",
+    version="0.0.2",
     description="Online payment fraud detection",
     author="Weena",
     author_email="sylvainka12@gmail.com",
