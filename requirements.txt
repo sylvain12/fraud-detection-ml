@@ -41,7 +41,7 @@ fastjsonschema==2.19.1
 filelock==3.15.1
 fonttools==4.53.0
 fqdn==1.5.1
--e git+https://github.com/sylvain12/fraud-detection-ml.git@16c3f7a26ae2f2c819774471ce4557023010777e#egg=fraud_detection
+-e git+https://github.com/sylvain12/fraud-detection-ml.git@bcf42d16d22d9ab0383d4c01bda5491bacf1ef6f#egg=fraud_detection
 frozenlist==1.4.1
 fsspec==2024.6.0
 gdown==5.2.0
