@@ -1,3 +1,4 @@
+from collections import Counter
 from enum import Enum
 
 import numpy as np
@@ -56,17 +57,22 @@ def transaction_error(type: TransactionType, transaction):
             pass
 
 
-class FraudDetectionClassifier(BaseEstimator, ClassifierMixin):
-    threshold = 0.5
+class DetectionMode(Enum):
+    SOFT = "soft"
+    HARD = "hard"
 
-    def __init__(self) -> None:
+
+class FraudDetectionClassifier(BaseEstimator, ClassifierMixin):
+    threshold = 0.4983
+    weights = [0.33, 0.33, 0.33]
+
+    def __init__(self, mode: DetectionMode.SOFT) -> None:
         super().__init__()
         print(
             Fore.BLUE
             + "\n⏳ Initialize new fraud detection classifer model..."
             + Style.RESET_ALL
         )
-        set_config(enable_metadata_routing=True)
         _xgb_params = {
             "n_estimators": 250,
             "learning_rate": 0.2657312661875277,
@@ -94,6 +100,8 @@ class FraudDetectionClassifier(BaseEstimator, ClassifierMixin):
             "class_weight": {0: 0.1542211055276382, 1: 0.8457788944723618},
         }
 
+        self.detection_mode = mode
+
         self.lr_model = build_model(
             LogisticRegression(random_state=SEED, max_iter=1000, **_lr_params)
         )
@@ -102,6 +110,27 @@ class FraudDetectionClassifier(BaseEstimator, ClassifierMixin):
         )
         self.xgb_model = build_model(
             XGBClassifier(random_state=SEED, enable_categorical=True, **_xgb_params)
+        )
+        # self.detection_mode = detection_mode
+        self.model = build_model(
+            VotingClassifier(
+                estimators=[
+                    (
+                        "lr",
+                        LogisticRegression(
+                            random_state=SEED, max_iter=1000, **_lr_params
+                        ).set_fit_request(sample_weight=True),
+                    ),
+                    # ("rf", RandomForestClassifier(random_state=SEED, **_rf_params)),
+                    (
+                        "xgb",
+                        XGBClassifier(
+                            random_state=SEED, enable_categorical=True, **_xgb_params
+                        ),
+                    ),
+                ],
+                voting=self.detection_mode,
+            )
         )
 
     def fit(self, X, y):
@@ -112,10 +141,23 @@ class FraudDetectionClassifier(BaseEstimator, ClassifierMixin):
         return self
 
     def predict(self, X) -> int:
-        lr_pred = self.lr_model.predict(X)
-        rf_pred = self.rf_model.predict(X)
-        xgb_pred = self.xgb_model.predict(X)
-        combined_pred = np.maximum(xgb_pred, np.maximum(lr_pred, rf_pred))
+        # lr_pred = self.lr_model.predict(X)
+        # rf_pred = self.rf_model.predict(X)
+        # xgb_pred = self.xgb_model.predict(X)
+
+        lr_prob = self.lr_model.predict_proba(X)[:, 1]
+        rf_prob = self.rf_model.predict_proba(X)[:, 1]
+        xgb_prob = self.xgb_model.predict_proba(X)[:, 1]
+
+        combined_prob = (
+            lr_prob * self.weights[0]
+            + rf_prob * self.weights[1]
+            + xgb_prob * self.weights[2]
+        ) / sum(self.weights)
+
+        # combined_pred = np.maximum(xgb_pred, np.maximum(lr_pred, rf_pred))
+        combined_pred = (combined_prob >= self.threshold).astype(int)
+
         return combined_pred
 
     def _fraud_details(self, X):
@@ -131,14 +173,24 @@ class FraudDetectionClassifier(BaseEstimator, ClassifierMixin):
         lr_score = self.lr_model.score(X, y)
         rf_score = self.rf_model.score(X, y)
         xgb_score = self.xgb_model.score(X, y)
-        combined_score = (lr_score + xgb_score + rf_score) / 3
+        combined_score = (
+            lr_score * self.weights[0]
+            + rf_score * self.weights[1]
+            + xgb_score * self.weights[2]
+        ) / sum(self.weights)
         return combined_score
 
     def predict_proba(self, X):
         lr_prob = self.lr_model.predict_proba(X)
         rf_prob = self.rf_model.predict_proba(X)
         xgb_prob = self.xgb_model.predict_proba(X)
-        combined_prob = (lr_prob + xgb_prob + rf_prob) / 3
+
+        combined_prob = (
+            lr_prob * self.weights[0]
+            + rf_prob * self.weights[1]
+            + xgb_prob * self.weights[2]
+        ) / sum(self.weights)
+        # combined_prob = (lr_prob + xgb_prob + rf_prob) / 3
         return combined_prob
 
     def evaluate(self, X, y) -> dict:

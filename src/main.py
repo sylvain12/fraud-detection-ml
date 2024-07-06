@@ -1,13 +1,17 @@
+import random
 from typing import NoReturn
 
+from sklearn import set_config
 import numpy as np
 import pandas as pd
-from fraud_detection.config import SEED, TEST_SIZE
+from fraud_detection.config import SEED, TEST_SIZE, DATA_DIR
 from fraud_detection.ml.data import clean_data, load_data
 from fraud_detection.ml.model import FraudDetectionClassifier
 from fraud_detection.ml.preprocess import preprocess_pipeline
 from fraud_detection.ml.registry import load_model, save_model, save_results
 from sklearn.model_selection import train_test_split
+
+set_config(enable_metadata_routing=True)
 
 
 def preprocess() -> tuple:
@@ -36,7 +40,7 @@ def train(
 
     if model is None:
         print("⛔️ No model found in local registry\n")
-        model = FraudDetectionClassifier()
+        model = FraudDetectionClassifier(mode="soft")
 
     model.fit(X_train, y_train)
 
@@ -80,7 +84,7 @@ def pred(X_pred: pd.DataFrame = None) -> int:
         X_pred = pd.DataFrame(
             dict(
                 # step=[1],
-                type=["TRANSFER"],
+                type=["CASH_OUT"],
                 amount=[100.00],
                 oldbalanceOrg=[200.00],
                 newbalanceOrig=[100.00],
@@ -104,9 +108,9 @@ def pred(X_pred: pd.DataFrame = None) -> int:
 def main() -> None:
     X_train, X_test, y_train, y_test = preprocess()
     # train(X_train, y_train, X_test, y_test)
-    # evaluate(X_test, y_test)
-    # res = pred()
-    # print(res)
+    evaluate(X_test, y_test)
+    res = pred()
+    print(res)
 
     # idxs_fraud = [100, 475, 839, 1478, 2371, 2421, 2771, 4794, 5003, 5129]
     # idxs_non_fraud = [
@@ -151,11 +155,25 @@ def main() -> None:
     # results = pred(X_val)
     # print(results)
 
-    # print([idx for idx, pred in enumerate(results) if pred == 1][:10])
-    # print([idx for idx, pred in enumerate(results) if pred == 0][:20])
     # X_val = X_test.loc[X_test["type"] == "TRANSFER"]
     # pred(X_val)
-    pred()
+
+    # results = pred(X_test)
+
+    # idxs_fraud = np.random.choice(
+    #     [idx for idx, pred in enumerate(results) if pred == 1], 37
+    # )
+    # idxs_non_fraud = np.random.choice(
+    #     [idx for idx, pred in enumerate(results) if pred == 0], 60
+    # )
+
+    # X_val = (
+    #     pd.concat([X_test.iloc[idxs_fraud], X_test.iloc[idxs_non_fraud]])
+    #     .sample(frac=1)
+    #     .reset_index(drop=True)
+    # )
+
+    # X_val.to_csv(DATA_DIR / "out.csv")
 
 
 if __name__ == "__main__":
